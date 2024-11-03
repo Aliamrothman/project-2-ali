@@ -1,6 +1,6 @@
 async function getCurrentWeatherByCity(city) {
     try {
-        const response = await fetch(`http://api.weatherapi.com/v1/forecast.json?key=fecb46fea0eb49978b870133240211&q=${city}&aqi=no&hours=24`);
+        const response = await fetch(`https://api.weatherapi.com/v1/forecast.json?key=fecb46fea0eb49978b870133240211&q=${city}&aqi=no&hours=24`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -14,10 +14,32 @@ async function getCurrentWeatherByCity(city) {
 
 document.addEventListener('DOMContentLoaded', () => {
     const locationInput = document.querySelector('.location-input');
-    const locationButton = document.querySelector('.location-button'); 
+    const locationButton = document.querySelector('.location-button');
+    const suggestionsList = document.querySelector('.suggestions-list');
 
     console.log('locationInput:', locationInput);
     console.log('locationButton:', locationButton);
+
+    locationInput.addEventListener('input', () => {
+        const inputValue = locationInput.value.trim().toLowerCase();
+        suggestionsList.innerHTML = '';
+        if (inputValue) {
+            const filteredCountries = countries.filter(country => country.toLowerCase().includes(inputValue));
+            filteredCountries.forEach(country => {
+                const suggestionItem = document.createElement('li');
+                suggestionItem.textContent = country;
+                suggestionItem.addEventListener('click', () => {
+                    locationInput.value = country;
+                    suggestionsList.innerHTML = '';
+                    suggestionsList.style.display = 'none';
+                });
+                suggestionsList.appendChild(suggestionItem);
+            });
+            suggestionsList.style.display = 'block';
+        } else {
+            suggestionsList.style.display = 'none';
+        }
+    });
 
     if (locationInput && locationButton) {
         locationButton.addEventListener('click', async () => {
@@ -25,12 +47,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (locationInputValue) {
                 const weatherData = await getCurrentWeatherByCity(locationInputValue);
 
-                const currentWeatherIcon = `https:${weatherData.current.condition.icon}`;
-                const currentWeatherTemperature = weatherData.current.temp_c;
-                const currentWeatherStatus = weatherData.current.condition.text;
+                if (weatherData) {
+                    const currentWeatherIcon = `https:${weatherData.current.condition.icon}`;
+                    const currentWeatherTemperature = weatherData.current.temp_c;
+                    const currentWeatherStatus = weatherData.current.condition.text;
 
-                renderCurrentWeather(currentWeatherIcon, currentWeatherTemperature, currentWeatherStatus);
-                renderForecast(weatherData.forecast.forecastday[0].hour);
+                    renderCurrentWeather(currentWeatherIcon, currentWeatherTemperature, currentWeatherStatus);
+                    renderForecast(weatherData.forecast.forecastday[0].hour);
+                } else {
+                    console.error('No weather data returned');
+                }
             } else {
                 console.error('Please enter a valid city name');
             }
@@ -67,7 +93,7 @@ function renderCurrentWeather(iconSrc, temperature, status) {
 function renderForecast(hourlyForecast) {
     const forecastContainer = document.querySelector('.forecast');
     if (forecastContainer) {
-        forecastContainer.innerHTML = ''; 
+        forecastContainer.innerHTML = '';
 
         hourlyForecast.forEach(hour => {
             const forecastElement = document.createElement('div');
